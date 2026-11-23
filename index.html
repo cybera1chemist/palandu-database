@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000">
+    <title>帕拉恩度 // 破译终端</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/app.js" defer></script>
+  </head>
+  <body>
+    <main class="terminal" aria-label="帕拉恩度破译终端">
+      <section class="terminal-output" id="terminal-output" aria-live="polite" aria-label="控制台输出">
+        <p>安全通道已建立。等待授权参数。</p>
+        <p class="spacer"></p>
+        <p>要启动破解程序，必须先提供数据库服务器的 IP 地址。</p>
+        <p>请在下方输入并执行以下命令：</p>
+        <p class="command-hint">run cute_rabbit.exe -ip {put_the_ip_here}</p>
+      </section>
+
+      <form class="command-form" id="command-form" autocomplete="off">
+        <label class="prompt" for="command-input">root@palandu:~$</label>
+        <input
+          id="command-input"
+          name="command"
+          type="text"
+          spellcheck="false"
+          autocapitalize="off"
+          enterkeyhint="send"
+          aria-label="输入控制台命令"
+          autofocus
+        >
+      </form>
+    </main>
+  </body>
+</html>
