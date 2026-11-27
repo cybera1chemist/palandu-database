@@ -1,11 +1,40 @@
 const form = document.querySelector("#command-form");
 const input = document.querySelector("#command-input");
 const output = document.querySelector("#terminal-output");
-const expectedIp = "123.456.789";
+const expectedCoordinates = { e: "114.06", n: "22.33" };
 const commandHistory = [];
 let queryStageStarted = false;
 let historyIndex = 0;
 let commandDraft = "";
+
+function parseCoordinateCommand(command) {
+  const parts = command.trim().split(/\s+/);
+  if (
+    parts.length !== 6
+    || parts[0].toLowerCase() !== "run"
+    || parts[1].toLowerCase() !== "cute_rabbit.exe"
+  ) {
+    return null;
+  }
+
+  const coordinates = {};
+  for (let index = 2; index < parts.length; index += 2) {
+    const direction = parts[index].toLowerCase();
+    const value = parts[index + 1];
+    if (
+      !["-e", "-n"].includes(direction)
+      || Object.hasOwn(coordinates, direction)
+      || !/^\d{1,3}\.\d{2}$/.test(value)
+    ) {
+      return null;
+    }
+    coordinates[direction.slice(1)] = value;
+  }
+
+  return Object.hasOwn(coordinates, "e") && Object.hasOwn(coordinates, "n")
+    ? coordinates
+    : null;
+}
 
 function appendOutput(text, className = "") {
   const line = document.createElement("p");
@@ -56,18 +85,21 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  const match = command.match(/^run cute_rabbit\.exe -ip (\S+)$/);
-  if (!match) {
-    appendOutput("未识别该指令。请检查命令格式后重试。");
+  const coordinates = parseCoordinateCommand(command);
+  if (!coordinates) {
+    appendOutput("未识别该指令或坐标格式无效，请检查命令后重试。");
     return;
   }
 
-  if (match[1] !== expectedIp) {
-    appendOutput("破解失败：无法连接目标服务器，请确认 IP 地址是否正确。");
+  if (
+    coordinates.e !== expectedCoordinates.e
+    || coordinates.n !== expectedCoordinates.n
+  ) {
+    appendOutput("渗透失败：无法定位数据库服务器，请确认提供的地理坐标是否正确。");
     return;
   }
 
-  appendOutput("IP 校验通过。破解程序已启动，数据库访问授权成功。", "system-line");
+  appendOutput("目标服务器地址解析成功。渗透程序启动，数据库连接授权已获取。", "system-line");
   appendOutput("正在切换至数据库查询阶段……");
   queryStageStarted = true;
 });
