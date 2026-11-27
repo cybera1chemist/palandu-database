@@ -38,6 +38,10 @@ body {
   margin: 0 0 8px;
 }
 
+.terminal-output .output-spacer {
+  min-height: 1.6em;
+}
+
 .startup-message {
   margin: 0;
   font: inherit;
