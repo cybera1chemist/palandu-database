@@ -3,6 +3,25 @@ const input = document.querySelector("#command-input");
 const output = document.querySelector("#terminal-output");
 const startupMessage = document.querySelector(".startup-message");
 const expectedCoordinates = { e: "114.06", n: "22.33" };
+const unlockStorageKey = "palandu-database-unlocked";
+const cipherByPlaintext = new Map([
+  ["0", "♈︎"],
+  ["1", "♉︎"],
+  ["2", "♊︎"],
+  ["3", "♋︎"],
+  ["4", "♌︎"],
+  ["5", "♍︎"],
+  ["6", "♎︎"],
+  ["7", "♏︎"],
+  ["8", "♐︎"],
+  ["9", "♑︎"],
+  ["A", "♒︎"],
+  ["B", "♓︎"],
+  ["a", "♒︎"],
+  ["b", "♓︎"],
+  ["11", "♒︎"],
+  ["12", "♓︎"]
+]);
 const outputLineDelay = 60;
 const helpLines = [
   "INSTRUCTION",
@@ -21,10 +40,24 @@ const helpLines = [
   "[STATUS] 等待输入目标服务器坐标..."
 ];
 const commandHistory = [];
-let queryStageStarted = false;
+let unlockStorageUnavailable = false;
 let historyIndex = 0;
 let commandDraft = "";
 let outputQueue = Promise.resolve();
+
+function loadUnlockState() {
+  try {
+    return window.localStorage.getItem(unlockStorageKey) === "true";
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "SecurityError") {
+      unlockStorageUnavailable = true;
+      return false;
+    }
+    throw error;
+  }
+}
+
+let queryStageStarted = loadUnlockState();
 
 function parseCoordinateArguments(parts) {
   if (parts.length !== 6) {
@@ -83,7 +116,30 @@ function enqueueOutput(lines) {
   });
 }
 
-const startupLines = startupMessage.textContent.split("\n");
+function persistUnlockState() {
+  try {
+    window.localStorage.setItem(unlockStorageKey, "true");
+    return true;
+  } catch (error) {
+    if (
+      error instanceof DOMException
+      && ["QuotaExceededError", "SecurityError"].includes(error.name)
+    ) {
+      enqueueOutput(["[ERROR] 无法保存解锁状态，请检查浏览器本地存储设置。"]);
+      return false;
+    }
+    throw error;
+  }
+}
+
+const startupLines = queryStageStarted
+  ? [
+      "[STATUS] 已恢复玩家解锁状态",
+      "[STATUS] TARGET ACQUIRED",
+      "",
+      "数据库查询模块已就绪。输入密码对照表中的原文即可查询。"
+    ]
+  : startupMessage.textContent.split("\n");
 if (startupLines[startupLines.length - 1] !== "") {
   startupLines.push("");
 }
@@ -95,6 +151,9 @@ enqueueLines(startupLines, (line, index) => {
   startupMessage.append(document.createTextNode(line));
   output.scrollTop = output.scrollHeight;
 });
+if (unlockStorageUnavailable) {
+  enqueueOutput(["[ERROR] 无法读取浏览器本地存储，解锁状态未恢复。"]);
+}
 
 input.addEventListener("keydown", (event) => {
   if (event.key === "ArrowUp" && commandHistory.length > 0) {
@@ -122,7 +181,6 @@ form.addEventListener("submit", (event) => {
   const command = input.value.trim();
   input.value = "";
   if (!command) {
-    enqueueOutput(["[ERROR] 未检测到有效指令"]);
     return;
   }
 
@@ -133,7 +191,13 @@ form.addEventListener("submit", (event) => {
 
   const parts = command.split(/\s+/);
   if (queryStageStarted) {
-    enqueueOutput(["数据库查询阶段尚未开放。"]);
+    const cipher = cipherByPlaintext.get(command);
+    if (cipher === undefined) {
+      enqueueOutput(["[ERROR] 数据库中无法检索到对应内容"]);
+      return;
+    }
+
+    enqueueOutput([cipher]);
     return;
   }
 
@@ -198,6 +262,10 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
+  if (!persistUnlockState()) {
+    return;
+  }
+
   enqueueOutput([
     "[COMMAND ACCEPTED]",
     "正在解析目标坐标...",
@@ -224,8 +292,7 @@ form.addEventListener("submit", (event) => {
     "",
     "Welcome ₍ᐢ.ˬ.ᐢ₎♡~",
     "这是一个使用起来非常简单的数据库查询程序~",
-    "只要输入以下命令：",
-    "search {你想查询的原文}",
+    "只要输入你想查询的原文，再按下回车",
     "程序就会返回对应的密文啦~"
   ]);
   queryStageStarted = true;
